@@ -125,3 +125,11 @@ export interface ReadStoreData {
   updatedAt: number
   entries: Record<string, ReadEntry>
 }
+
+/** 固定本地存储结构; entries 为 readKey -> 固定时间戳. */
+export interface PinStoreData {
+  version: 1
+  uid: string
+  updatedAt: number
+  entries: Record<string, number>
+}

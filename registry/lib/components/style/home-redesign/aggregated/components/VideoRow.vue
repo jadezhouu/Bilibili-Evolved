@@ -21,6 +21,7 @@
         :key="card.readKey"
         :data="card"
         :read="isCardRead(card.readKey)"
+        :pinned="isCardPinned(card.readKey)"
         :read-mode="readMode"
         :hide-watchlater="hideWatchlater"
       />
@@ -47,6 +48,7 @@
 import { PropType } from 'vue'
 import { VEmpty, VLoading } from '@/ui'
 import { ExposureTracker } from '../exposure'
+import { pinStore } from '../pin-store'
 import { readStore } from '../read-store'
 import type { AggregatedVideoCard, SectionId } from '../types'
 import { ReadModeOption } from '../types'
@@ -100,6 +102,8 @@ export default Vue.extend({
     return {
       canScrollLeft: false,
       canScrollRight: false,
+      pinVersion: 0,
+      pinUnsubscribe: null as (() => void) | null,
     }
   },
   watch: {
@@ -110,6 +114,16 @@ export default Vue.extend({
     readMode() {
       this.setupExposure()
     },
+    pinVersion() {
+      if (this.readMode === ReadModeOption.Exposure) {
+        this.setupExposure()
+      }
+    },
+  },
+  created() {
+    this.pinUnsubscribe = pinStore.subscribe(() => {
+      this.pinVersion++
+    })
   },
   mounted() {
     this.setupExposure()
@@ -117,6 +131,7 @@ export default Vue.extend({
     this.$nextTick(this.updateScrollState)
   },
   beforeDestroy() {
+    this.pinUnsubscribe?.()
     this.getExposureTracker()?.destroy()
     this.setExposureTracker(null)
     window.removeEventListener('resize', this.updateScrollState)
@@ -124,6 +139,10 @@ export default Vue.extend({
   methods: {
     isCardRead(key: string): boolean {
       return typeof this.isRead === 'function' ? this.isRead(key) : false
+    },
+    isCardPinned(key: string): boolean {
+      // pinVersion 让模板在 store 变化后重新求值.
+      return this.pinVersion >= 0 && pinStore.has(key)
     },
     getExposureTracker(): ExposureTracker | null {
       return (this as any).exposureTracker ?? null
@@ -151,8 +170,14 @@ export default Vue.extend({
         )
         this.setExposureTracker(tracker)
         const root = this.$el as HTMLElement
+        const elements = Array.from(
+          root.querySelectorAll('.aggregated-video-card'),
+        ) as HTMLElement[]
         tracker.observe(
-          Array.from(root.querySelectorAll('.aggregated-video-card')) as HTMLElement[],
+          elements.filter(element => {
+            const key = element.getAttribute('data-read-key')
+            return !key || !pinStore.has(key)
+          }),
         )
       })
     },
@@ -179,7 +204,7 @@ export default Vue.extend({
     markExposed(element: HTMLElement) {
       const key = element.getAttribute('data-read-key')
       const source = element.getAttribute('data-read-source')
-      if (!key || !source || source === 'watchlater') {
+      if (!key || !source || source === 'watchlater' || pinStore.has(key)) {
         return
       }
       readStore.mark(key, source as Exclude<SectionId, 'watchlater'>, 'exposure')

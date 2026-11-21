@@ -48,6 +48,7 @@ import PopularSection from './components/PopularSection.vue'
 import WeeklySection from './components/WeeklySection.vue'
 import WatchlaterSection from './components/WatchlaterSection.vue'
 import { getAggregatedHomeOptions, sectionDefinitions, sectionsChangedEvent } from './options'
+import { pinStore } from './pin-store'
 import { readStore } from './read-store'
 import type { SectionId } from './types'
 import { ReadDisplayOption, ReadModeOption } from './types'
@@ -87,6 +88,10 @@ export default Vue.extend({
     visibleSections(): SectionId[] {
       return this.sectionOrder.filter(id => !this.hiddenSections[id])
     },
+  },
+  created() {
+    // 先加载固定状态, 子板块创建时才能按真实 pin 状态渲染.
+    pinStore.init(getUID())
   },
   mounted() {
     readStore.init(getUID())

@@ -56,6 +56,14 @@
       <VButton :disabled="readCount === 0" @click="clearRead">清空已读</VButton>
     </div>
     <div class="aggregated-extra-options-section">
+      <div class="aggregated-extra-options-title">固定记录</div>
+      <div class="aggregated-extra-options-tip">
+        当前 {{ pinCount }} 条, 按 UID 保存在本地; 固定只阻止点击/曝光自动标记,
+        不阻挡手动已读或全部标记已读.
+      </div>
+      <VButton :disabled="pinCount === 0" @click="clearPins">清空固定</VButton>
+    </div>
+    <div class="aggregated-extra-options-section">
       <div class="aggregated-extra-options-title">动态时间点</div>
       <div class="aggregated-extra-options-tip">{{ cutoffText }}</div>
       <VButton @click="resetWatermark">重置为显示全部动态</VButton>
@@ -64,6 +72,7 @@
 </template>
 <script lang="ts">
 import type { SortableEvent } from 'sortablejs'
+import { getUID } from '@/core/utils'
 import { SortableJSLibrary } from '@/core/runtime-library'
 import { VButton, VIcon } from '@/ui'
 import {
@@ -73,6 +82,7 @@ import {
   setSectionsSettings,
   type SectionDefinition,
 } from './options'
+import { pinStore } from './pin-store'
 import { readStore } from './read-store'
 import { getFeedsCutoffAt, setFeedsCutoffAt } from './watermarks'
 import type { SectionId, SectionSettings } from './types'
@@ -92,6 +102,8 @@ export default Vue.extend({
       sortedItems: [] as SortItem[],
       readCount: 0,
       readUnsubscribe: null as (() => void) | null,
+      pinCount: 0,
+      pinUnsubscribe: null as (() => void) | null,
     }
   },
   computed: {
@@ -104,15 +116,21 @@ export default Vue.extend({
     },
   },
   mounted() {
+    pinStore.init(getUID())
     this.readCount = readStore.count()
     this.readUnsubscribe = readStore.subscribe(() => {
       this.readCount = readStore.count()
+    })
+    this.pinCount = pinStore.count()
+    this.pinUnsubscribe = pinStore.subscribe(() => {
+      this.pinCount = pinStore.count()
     })
     this.syncItems()
     this.setupSortable()
   },
   beforeDestroy() {
     this.readUnsubscribe?.()
+    this.pinUnsubscribe?.()
   },
   methods: {
     syncItems() {
@@ -174,6 +192,9 @@ export default Vue.extend({
     },
     clearRead() {
       readStore.clear()
+    },
+    clearPins() {
+      pinStore.clear()
     },
     resetWatermark() {
       setFeedsCutoffAt(0)
