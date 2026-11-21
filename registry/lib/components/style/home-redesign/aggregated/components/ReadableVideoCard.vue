@@ -132,7 +132,6 @@ export default Vue.extend({
   position: relative;
   flex: 0 0 auto;
   scroll-snap-align: start;
-  transition: opacity 0.2s ease-out;
 
   &-actions {
     position: absolute;
@@ -197,10 +196,13 @@ export default Vue.extend({
   }
 
   &.is-read {
-    opacity: 0.45;
-    filter: grayscale(0.6);
+    .video-card {
+      opacity: 0.45;
+      filter: grayscale(0.6);
+      transition: opacity 0.2s ease-out;
+    }
 
-    &:hover {
+    &:hover .video-card {
       opacity: 1;
       filter: none;
     }
