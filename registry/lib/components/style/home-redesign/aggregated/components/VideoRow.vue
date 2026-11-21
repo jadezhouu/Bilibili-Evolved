@@ -206,7 +206,8 @@ export default Vue.extend({
     padding: 12px 4px;
     overflow-x: auto;
     overflow-y: hidden;
-    scroll-snap-type: x mandatory;
+    overflow-y: clip;
+    overscroll-behavior-x: contain;
   }
 
   &-state {
