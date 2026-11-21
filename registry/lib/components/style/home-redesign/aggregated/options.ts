@@ -89,7 +89,7 @@ export const aggregatedHomeOptionsMetadata = defineOptionsMetadata({
     validator: getNumberValidator(1000, 3000),
   },
   horizontalWheelScroll: {
-    displayName: '启用横向滚动',
+    displayName: 'Shift + 滚轮横向滚动',
     defaultValue: false,
   },
 })

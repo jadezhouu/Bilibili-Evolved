@@ -46,10 +46,10 @@
 <script lang="ts">
 import { PropType } from 'vue'
 import { addComponentListener, removeComponentListener } from '@/core/settings'
-import { enableHorizontalScroll } from '@/core/horizontal-scroll'
 import { VEmpty, VLoading } from '@/ui'
 import { ExposureTracker } from '../exposure'
 import { getAggregatedHomeOptions } from '../options'
+import { enableShiftHorizontalWheel } from '../wheel-scroll'
 import { readStore } from '../read-store'
 import type { AggregatedVideoCard, SectionId } from '../types'
 import { ReadModeOption } from '../types'
@@ -184,7 +184,7 @@ export default Vue.extend({
       if (!this.wheelEnabled || !content) {
         return
       }
-      this.wheelCancel = enableHorizontalScroll(content)
+      this.wheelCancel = enableShiftHorizontalWheel(content)
     },
     updateScrollState() {
       const content = this.$refs.content as HTMLElement | undefined
