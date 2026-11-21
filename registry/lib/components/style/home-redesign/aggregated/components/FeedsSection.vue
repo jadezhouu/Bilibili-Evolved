@@ -56,6 +56,7 @@ import { ReadDisplayOption, ReadModeOption } from '../types'
 import { fetchDynamicPage } from '../api/feeds'
 import { formatApiError, type BilibiliApiError } from '../api/http'
 import { computeView } from '../api/view'
+import { pinStore } from '../pin-store'
 import { readStore } from '../read-store'
 import { ensureFeedsCutoffAt, setFeedsCutoffAt, watermarkChangedEvent } from '../watermarks'
 import SectionShell from './SectionShell.vue'
@@ -108,6 +109,7 @@ export default Vue.extend({
       readAtLoad: new Set<string>(),
       readVersion: 0,
       readUnsubscribe: null as (() => void) | null,
+      pinUnsubscribe: null as (() => void) | null,
       cutoffAt: null as number | null,
       undoCutoff: null as number | null,
       undoTimer: null as ReturnType<typeof setTimeout> | null,
@@ -119,7 +121,7 @@ export default Vue.extend({
   },
   computed: {
     cards(): AggregatedVideoCard[] {
-      // readVersion 用于已读变化后强制重算.
+      // readVersion 用于已读/固定变化后强制重算.
       if (this.readVersion < 0) {
         return []
       }
@@ -133,6 +135,7 @@ export default Vue.extend({
         display: this.readDisplay as ReadDisplayOption,
         showRead: this.showRead,
         isRead: key => readStore.has(key),
+        isPinned: key => pinStore.has(key),
       })
     },
     emptyText(): string {
@@ -155,11 +158,15 @@ export default Vue.extend({
     this.readUnsubscribe = readStore.subscribe(() => {
       this.readVersion++
     })
+    this.pinUnsubscribe = pinStore.subscribe(() => {
+      this.readVersion++
+    })
     watermarkChangedEvent.addEventListener('change', this.onWatermarkChanged)
     this.load(this.restored ? 1 : this.maxPages)
   },
   beforeDestroy() {
     this.readUnsubscribe?.()
+    this.pinUnsubscribe?.()
     watermarkChangedEvent.removeEventListener('change', this.onWatermarkChanged)
     if (this.undoTimer != null) {
       clearTimeout(this.undoTimer)
@@ -253,7 +260,7 @@ export default Vue.extend({
             }
             seen.add(card.readKey)
             collected.push(card)
-            if (!filterRead || !readStore.has(card.readKey)) {
+            if (!filterRead || !readStore.has(card.readKey) || pinStore.has(card.readKey)) {
               visibleCount++
             }
           }

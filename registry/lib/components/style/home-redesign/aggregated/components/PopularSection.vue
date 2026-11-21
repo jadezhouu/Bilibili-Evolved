@@ -40,6 +40,7 @@ import { ReadDisplayOption, ReadModeOption } from '../types'
 import { getPopularPage } from '../api/popular'
 import { formatApiError, type BilibiliApiError } from '../api/http'
 import { computeView } from '../api/view'
+import { pinStore } from '../pin-store'
 import { readStore } from '../read-store'
 import SectionShell from './SectionShell.vue'
 import VideoRow from './VideoRow.vue'
@@ -91,6 +92,7 @@ export default Vue.extend({
       readAtLoad: new Set<string>(),
       readVersion: 0,
       readUnsubscribe: null as (() => void) | null,
+      pinUnsubscribe: null as (() => void) | null,
       epoch: 0,
       loading: false,
       error: null as BilibiliApiError | null,
@@ -111,6 +113,7 @@ export default Vue.extend({
         display: this.readDisplay as ReadDisplayOption,
         showRead: this.showRead,
         isRead: key => readStore.has(key),
+        isPinned: key => pinStore.has(key),
       })
     },
     emptyText(): string {
@@ -130,10 +133,14 @@ export default Vue.extend({
     this.readUnsubscribe = readStore.subscribe(() => {
       this.readVersion++
     })
+    this.pinUnsubscribe = pinStore.subscribe(() => {
+      this.readVersion++
+    })
     this.load(this.restored ? 1 : this.maxPages)
   },
   beforeDestroy() {
     this.readUnsubscribe?.()
+    this.pinUnsubscribe?.()
   },
   methods: {
     isCardRead(key: string): boolean {
@@ -165,7 +172,7 @@ export default Vue.extend({
             }
             seen.add(card.readKey)
             collected.push(card)
-            if (!filterRead || !readStore.has(card.readKey)) {
+            if (!filterRead || !readStore.has(card.readKey) || pinStore.has(card.readKey)) {
               visibleCount++
             }
           }

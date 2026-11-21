@@ -16,8 +16,9 @@
       <button
         type="button"
         class="aggregated-video-card-action mark-read"
-        title="标记为已读"
-        aria-label="标记为已读"
+        :disabled="read"
+        :title="read ? '已标记已读' : '标记为已读'"
+        :aria-label="read ? '已标记已读' : '标记为已读'"
         @click.stop.prevent="markReadManually"
       >
         <VIcon icon="mdi-check" :size="16" />
@@ -77,7 +78,7 @@ export default Vue.extend({
       return this.readMode !== ReadModeOption.Off && this.data.source !== 'watchlater'
     },
     showActions(): boolean {
-      return this.readMode === ReadModeOption.Click && this.clickableRead && !this.read
+      return this.readMode === ReadModeOption.Click && this.clickableRead
     },
   },
   methods: {
@@ -95,7 +96,7 @@ export default Vue.extend({
       this.markAsRead()
     },
     markReadManually() {
-      if (!this.showActions) {
+      if (!this.showActions || this.read) {
         return
       }
       pinStore.unpin(this.data.readKey)
@@ -172,6 +173,13 @@ export default Vue.extend({
       background: var(--theme-color, #00a1d6);
       opacity: 1;
       pointer-events: auto;
+    }
+
+    &:disabled,
+    &:disabled:hover {
+      background: #0006;
+      color: #ffffff80;
+      cursor: default;
     }
   }
 

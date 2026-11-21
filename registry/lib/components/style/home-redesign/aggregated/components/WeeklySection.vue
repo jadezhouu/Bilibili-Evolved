@@ -66,6 +66,7 @@ import { fetchWeeklyIssue, fetchWeeklyList } from '../api/weekly'
 import { getAggregatedHomeOptions } from '../options'
 import { formatApiError, type BilibiliApiError } from '../api/http'
 import { computeView } from '../api/view'
+import { pinStore } from '../pin-store'
 import { readStore } from '../read-store'
 import SectionShell from './SectionShell.vue'
 import VideoRow from './VideoRow.vue'
@@ -109,6 +110,7 @@ export default Vue.extend({
       readAtLoad: new Set<string>(),
       readVersion: 0,
       readUnsubscribe: null as (() => void) | null,
+      pinUnsubscribe: null as (() => void) | null,
       epoch: 0,
       requestId: 0,
       issue: null as WeeklyIssue | null,
@@ -182,6 +184,7 @@ export default Vue.extend({
         display: this.readDisplay as ReadDisplayOption,
         showRead: this.showRead,
         isRead: key => readStore.has(key),
+        isPinned: key => pinStore.has(key),
       })
     },
     emptyText(): string {
@@ -201,10 +204,14 @@ export default Vue.extend({
     this.readUnsubscribe = readStore.subscribe(() => {
       this.readVersion++
     })
+    this.pinUnsubscribe = pinStore.subscribe(() => {
+      this.readVersion++
+    })
     this.load()
   },
   beforeDestroy() {
     this.readUnsubscribe?.()
+    this.pinUnsubscribe?.()
   },
   methods: {
     isCardRead(key: string): boolean {
