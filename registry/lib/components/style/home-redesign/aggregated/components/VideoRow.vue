@@ -203,7 +203,8 @@ export default Vue.extend({
     @include h-center();
     @include no-scrollbar();
     gap: 16px;
-    padding: 12px 4px;
+    padding: 12px 40px;
+    scroll-padding-inline: 40px;
     overflow-x: auto;
     overflow-y: hidden;
     overflow-y: clip;
