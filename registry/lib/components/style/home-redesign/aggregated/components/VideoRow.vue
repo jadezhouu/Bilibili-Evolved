@@ -45,11 +45,8 @@
 </template>
 <script lang="ts">
 import { PropType } from 'vue'
-import { addComponentListener, removeComponentListener } from '@/core/settings'
 import { VEmpty, VLoading } from '@/ui'
 import { ExposureTracker } from '../exposure'
-import { getAggregatedHomeOptions } from '../options'
-import { enableShiftHorizontalWheel } from '../wheel-scroll'
 import { readStore } from '../read-store'
 import type { AggregatedVideoCard, SectionId } from '../types'
 import { ReadModeOption } from '../types'
@@ -101,9 +98,6 @@ export default Vue.extend({
   },
   data() {
     return {
-      wheelEnabled: false,
-      wheelCancel: null as (() => void) | null,
-      wheelTimer: null as ReturnType<typeof setInterval> | null,
       canScrollLeft: false,
       canScrollRight: false,
     }
@@ -111,7 +105,6 @@ export default Vue.extend({
   watch: {
     cards() {
       this.setupExposure()
-      this.setupWheelScroll()
       this.$nextTick(this.updateScrollState)
     },
     readMode() {
@@ -120,23 +113,13 @@ export default Vue.extend({
   },
   mounted() {
     this.setupExposure()
-    addComponentListener('aggregatedHome.horizontalWheelScroll', this.applyWheelScroll, true)
     window.addEventListener('resize', this.updateScrollState)
     this.$nextTick(this.updateScrollState)
-    this.wheelTimer = setInterval(() => {
-      this.applyWheelScroll(Boolean(getAggregatedHomeOptions().horizontalWheelScroll))
-    }, 800)
   },
   beforeDestroy() {
     this.getExposureTracker()?.destroy()
     this.setExposureTracker(null)
-    removeComponentListener('aggregatedHome.horizontalWheelScroll', this.applyWheelScroll)
     window.removeEventListener('resize', this.updateScrollState)
-    if (this.wheelTimer != null) {
-      clearInterval(this.wheelTimer)
-      this.wheelTimer = null
-    }
-    this.wheelCancel?.()
   },
   methods: {
     isCardRead(key: string): boolean {
@@ -172,19 +155,6 @@ export default Vue.extend({
           Array.from(root.querySelectorAll('.aggregated-video-card')) as HTMLElement[],
         )
       })
-    },
-    applyWheelScroll(enabled: boolean) {
-      this.wheelEnabled = Boolean(enabled)
-      this.setupWheelScroll()
-    },
-    setupWheelScroll() {
-      this.wheelCancel?.()
-      this.wheelCancel = null
-      const content = this.$refs.content as HTMLElement | undefined
-      if (!this.wheelEnabled || !content) {
-        return
-      }
-      this.wheelCancel = enableShiftHorizontalWheel(content)
     },
     updateScrollState() {
       const content = this.$refs.content as HTMLElement | undefined
